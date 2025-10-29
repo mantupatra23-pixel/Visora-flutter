@@ -1,0 +1,69 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'com.google.gms.google-services'
+    id 'dev.flutter.flutter-gradle-plugin'
+}
+
+android {
+    namespace "com.example.visora_ai_flutter"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.example.visora_ai_flutter"
+        minSdk 23
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+
+        multiDexEnabled true
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.debug
+            minifyEnabled false
+            shrinkResources false
+            // 👇 ye ensure karega ke Firebase aur kotlin libs obfuscate na ho
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    packagingOptions {
+        resources {
+            excludes += ['META-INF/DEPENDENCIES', 'META-INF/NOTICE', 'META-INF/LICENSE']
+        }
+    }
+}
+
+flutter {
+    source '../..'
+}
+
+dependencies {
+    // ✅ Use Firebase BOM for version management
+    implementation platform('com.google.firebase:firebase-bom:33.4.0')
+
+    // 🔥 Firebase modules
+    implementation 'com.google.firebase:firebase-auth'
+    implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-messaging'
+    implementation 'com.google.firebase:firebase-storage'
+    implementation 'com.google.firebase:firebase-crashlytics'
+
+    // AndroidX core dependency
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'androidx.multidex:multidex:2.0.1'
+}

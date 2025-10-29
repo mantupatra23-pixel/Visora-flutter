@@ -1,30 +1,43 @@
-name: Flutter Build
+name: Build & Auto-Release Signed APK (Cloud)
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Repo
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
+          flutter-version: "3.19.6"
 
-      - name: Install Dependencies
+      - name: Recreate Android folder (fix gradle issue)
+        run: |
+          flutter create . --platforms=android --project-name visora_ai_flutter
+          echo "✅ Android folder recreated successfully!"
+
+      - name: Flutter pub get
         run: flutter pub get
 
-      - name: Build APK
+      - name: Create google-services.json from secret
+        run: |
+          echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+
+      - name: Build Release APK
         run: flutter build apk --release
 
-      - name: Upload Artifact
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk
+          name: Visora-AI-APK
           path: build/app/outputs/flutter-apk/app-release.apk
