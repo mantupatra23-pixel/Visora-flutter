@@ -21,7 +21,7 @@ jobs:
         with:
           flutter-version: "3.19.6"
 
-      # 🧱 Recreate Android folder (gradle fix)
+      # 🧱 Recreate Android folder (fix gradle issue)
       - name: Recreate Android folder (fix gradle issue)
         run: |
           flutter create . --platforms=android --project-name visora_ai_flutter
@@ -45,7 +45,7 @@ jobs:
                 \"client_info\": {
                   \"mobilesdk_app_id\": \"${{ secrets.FIREBASE_APP_ID }}\",
                   \"android_client_info\": {
-                    \"package_name\": \"com.visoraflutter\"
+                    \"package_name\": \"com.example.visora_ai_flutter\"
                   }
                 },
                 \"api_key\": [
