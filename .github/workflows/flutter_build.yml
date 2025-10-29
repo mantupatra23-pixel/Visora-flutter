@@ -11,31 +11,64 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 🧩 Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # ⚙️ Setup Flutter
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.19.6"
 
+      # 🧱 Recreate Android folder (gradle fix)
       - name: Recreate Android folder (fix gradle issue)
         run: |
           flutter create . --platforms=android --project-name visora_ai_flutter
           echo "✅ Android folder recreated successfully!"
 
+      # 📦 Get dependencies
       - name: Flutter pub get
         run: flutter pub get
 
-      - name: Create google-services.json from secret
+      # 🔐 Create google-services.json dynamically from secrets
+      - name: Create google-services.json from secrets
         run: |
-          echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
-        env:
-          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          echo "{
+            \"project_info\": {
+              \"project_number\": \"${{ secrets.FIREBASE_PROJECT_NUMBER }}\",
+              \"project_id\": \"${{ secrets.FIREBASE_PROJECT_ID }}\",
+              \"storage_bucket\": \"${{ secrets.FIREBASE_STORAGE_BUCKET }}\"
+            },
+            \"client\": [
+              {
+                \"client_info\": {
+                  \"mobilesdk_app_id\": \"${{ secrets.FIREBASE_APP_ID }}\",
+                  \"android_client_info\": {
+                    \"package_name\": \"com.visoraflutter\"
+                  }
+                },
+                \"api_key\": [
+                  {
+                    \"current_key\": \"${{ secrets.FIREBASE_API_KEY }}\"
+                  }
+                ],
+                \"services\": {
+                  \"appinvite_service\": {
+                    \"other_platform_oauth_client\": []
+                  }
+                }
+              }
+            ],
+            \"configuration_version\": \"1\"
+          }" > android/app/google-services.json
+          echo "✅ Firebase google-services.json created successfully!"
 
+      # 🏗️ Build release APK
       - name: Build Release APK
         run: flutter build apk --release
 
+      # 📤 Upload the generated APK artifact
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
