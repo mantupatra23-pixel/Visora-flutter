@@ -13,7 +13,17 @@ import 'package:lottie/lottie.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// >>> CHANGE THIS TO YOUR LIVE BACKEND BASE URL <<<
-const String backendBase = 'https://preauricular-danyell-farand.ngrok-free.dev';
+// Permanent Render URL (always online)
+const String renderBase = 'https://visora-ai-gb8t.onrender.com';
+
+// Temporary Ngrok URL (changes every time)
+const String ngrokBase = 'https://preauricular-danyell-farand.ngrok-free.dev';
+
+// 👉 Which backend to use?
+// For APK / Production → renderBase
+// For Testing (Kaggle / Termux) → ngrokBase
+const String backendBase = renderBase;
+// const String backendBase = ngrokBase;
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
