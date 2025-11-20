@@ -771,3 +771,46 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
     );
   }
 }
+
+body: Column(
+  mainAxisAlignment: MainAxisAlignment.center,
+  children: [
+    Expanded(
+      child: Center(
+        child: loading
+            ? const CircularProgressIndicator()
+            : AspectRatio(
+                aspectRatio: _controller!.value.aspectRatio,
+                child: VideoPlayer(_controller!),
+              ),
+      ),
+    ),
+
+    // ===== DOWNLOAD BUTTON =====
+    Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: ElevatedButton.icon(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.green,
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        icon: const Icon(Icons.download, color: Colors.white),
+        label: const Text(
+          "Download Video",
+          style: TextStyle(color: Colors.white, fontSize: 16),
+        ),
+        onPressed: () async {
+          final url = widget.url;
+
+          // Open in browser → automatic download
+          if (await canLaunch(url)) {
+            await launch(url);
+          }
+        },
+      ),
+    ),
+  ],
+),
