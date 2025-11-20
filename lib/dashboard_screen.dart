@@ -17,7 +17,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 const String renderBase = 'https://visora-ai-gb8t.onrender.com';
 
 // Temporary Ngrok URL (changes every time)
-const String ngrokBase = 'https://preauricular-danyell-farand.ngrok-free.dev';
+const String backendBase = 'https://preauricular-danyell-farand.ngrok-free.dev';
 
 // 👉 Which backend to use?
 // For APK / Production → renderBase
