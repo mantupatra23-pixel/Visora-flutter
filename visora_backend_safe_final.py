@@ -41,6 +41,94 @@ import librosa
 
 app = Flask(__name__)
 
+# ============================
+# GPU / CPU AUTO DETECT BLOCK
+# ============================
+
+import torch
+
+def get_hardware_status():
+    gpu_available = torch.cuda.is_available()
+    gpu_name = torch.cuda.get_device_name(0) if gpu_available else "CPU"
+    return {
+        "gpu_available": gpu_available,
+        "gpu_name": gpu_name
+    }
+
+@app.get("/status")
+def status():
+    return {
+        "status": "Visora UCVE-X GPU Backend Running",
+        **get_hardware_status()
+    }
+
+# ----------- ADDING VISORA API ENDPOINTS -----------
+
+@app.get("/trending_videos")
+def trending_videos():
+    return {
+        "videos": [
+            {
+                "title": "Motivation Reel",
+                "thumbnail": "https://example.com/m1.jpg",
+                "url": "https://example.com/video1.mp4"
+            },
+            {
+                "title": "Hanuman Reel",
+                "thumbnail": "https://example.com/m2.jpg",
+                "url": "https://example.com/video2.mp4"
+            }
+        ]
+    }
+
+
+@app.get("/templates")
+def templates():
+    return {
+        "templates": [
+            {"id": 1, "name": "Motivation Template"},
+            {"id": 2, "name": "Music Reel Template"},
+            {"id": 3, "name": "3D Story Template"},
+        ]
+    }
+
+
+@app.get("/user/projects")
+def user_projects(user_id: str):
+    return {
+        "user_id": user_id,
+        "projects": []
+    }
+
+
+@app.get("/user/voices")
+def user_voices():
+    return {
+        "voices": [
+            {"id": "female_hindi", "name": "Female - Hindi"},
+            {"id": "male_hindi", "name": "Male - Hindi"},
+            {"id": "female_english", "name": "Female - English"},
+        ]
+    }
+
+
+@app.get("/profile/{user_id}")
+def profile(user_id: str):
+    return {
+        "user_id": user_id,
+        "name": "Demo User",
+        "videos_created": 15,
+        "storage_used": "1.2 GB"
+    }
+
+
+@app.get("/search")
+def search(query: str):
+    return {
+        "query": query,
+        "results": []
+    }
+
 # 🧠 In-memory user rate tracking
 user_requests = {}
 
