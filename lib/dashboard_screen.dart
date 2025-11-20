@@ -13,7 +13,7 @@ import 'package:lottie/lottie.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// >>> CHANGE THIS TO YOUR LIVE BACKEND BASE URL <<<
-const String backendBase = 'https://visora-ai-5nqs.onrender.com';
+const String backendBase = 'https://preauricular-danyell-farand.ngrok-free.dev';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
