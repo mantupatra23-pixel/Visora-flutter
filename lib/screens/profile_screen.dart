@@ -14,7 +14,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:share_plus/share_plus.dart';
 
-const String backendBase = 'https://visora-ai-5nqs.onrender.com';
+const String backendBase = 'https://visora-ai-gb8t.onrender.com';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
