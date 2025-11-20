@@ -9,7 +9,7 @@ import 'package:lottie/lottie.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// 🔗 Your live backend base URL:
-const String backendBase = 'https://visora-ai-5nqs.onrender.com';
+const String backendBase = 'https://preauricular-danyell-farand.ngrok-free.dev';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
