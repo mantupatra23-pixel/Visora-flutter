@@ -10,7 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lottie/lottie.dart';
 
-const String backendBase = 'https://visora-ai-5nqs.onrender.com';
+const String backendBase = 'https://visora-ai-gb8t.onrender.com';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
