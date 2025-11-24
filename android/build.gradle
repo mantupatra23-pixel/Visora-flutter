@@ -1,49 +1,44 @@
 // android/build.gradle (top-level)
 buildscript {
     ext.kotlin_version = "1.9.25"
-
     repositories {
+        // IMPORTANT: google() first so Android/Google artifacts resolve reliably
         google()
+        maven { url "https://maven.google.com" } // explicit google maven URL
         mavenCentral()
-        // fallback google maven url (sometimes helpful on CI)
-        maven { url "https://dl.google.com/dl/android/maven2/" }
+        gradlePluginPortal()
     }
-
     dependencies {
-        // Android Gradle Plugin
-        classpath "com.android.tools.build:gradle:8.1.1"
-
-        // Kotlin gradle plugin
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlin_version}"
-
-        // Optional: google services plugin (uncomment if you use firebase plugin)
-        // classpath "com.google.gms:google-services:4.3.15"
+        classpath "com.android.tools.build:gradle:8.1.2"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "com.google.gms:google-services:4.4.0"
     }
 }
 
 allprojects {
     repositories {
-        // prefer mavenCentral and google
-        mavenCentral()
+        // Keep google() first
         google()
-        // google direct URL (helpful if some CI DNS prefers full URL)
+        maven { url "https://maven.google.com" } // explicit
+        mavenCentral()
+        // fallback to dl.google if needed:
         maven { url "https://dl.google.com/dl/android/maven2/" }
-        // if you ever see old jcenter artifacts missing, add jcenter (temporary)
-        // maven { url "https://jcenter.bintray.com/" }
     }
 }
 
-// keep gradle build dir outside android folder (optional)
 rootProject.buildDir = "../build"
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
     project.evaluationDependsOn(":app")
+}
 
-    // Kotlin compiler options for modules that apply Kotlin plugin
+// Safe Kotlin compiler settings (optional)
+subprojects {
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         kotlinOptions {
             jvmTarget = "17"
-            freeCompilerArgs += ["-Xskip-metadata-version-check"]
+            apiVersion = "1.9"
+            languageVersion = "1.9"
         }
     }
 }

@@ -1,11 +1,9 @@
-// IMPORTANT: pluginManagement must be first in the file
 pluginManagement {
     repositories {
         google()
+        maven { url "https://maven.google.com" }
         mavenCentral()
         gradlePluginPortal()
-        maven { url "https://maven.google.com" }
-        maven { url "https://dl.google.com/dl/android/maven2/" }
     }
 }
 
@@ -13,19 +11,16 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google()
-        mavenCentral()
         maven { url "https://maven.google.com" }
+        mavenCentral()
         maven { url "https://dl.google.com/dl/android/maven2/" }
     }
 }
 
-// project name after pluginManagement and dependencyResolutionManagement
 rootProject.name = "visora_ai"
 include ':app'
 
-// Evaluate flutter settings (do not move this above pluginManagement)
 setBinding(new Binding([gradle: this]))
-
 File flutterSettings = new File(settingsDir, "flutter_settings.gradle")
 if (flutterSettings.exists()) {
     evaluate(flutterSettings)
