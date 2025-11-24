@@ -33,27 +33,27 @@ jobs:
         with:
           flutter-version: 'stable'
 
-      - name: Decode Android keystore
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+      - name: Decode Android keystore (if provided)
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > $HOME/visora-release.jks
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "Decoding keystore from secrets..."
+            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > $HOME/visora-release.jks
+            ls -la $HOME/visora-release.jks || true
+          else
+            echo "ANDROID_KEYSTORE_BASE64 secret not set. Skipping keystore decode."
+          fi
 
       - name: Create android/key.properties
         run: |
           mkdir -p android
           cat > android/key.properties <<EOF
-          storePassword=${ANDROID_KEYSTORE_PASSWORD}
-          keyPassword=${ANDROID_KEY_PASSWORD}
-          keyAlias=${ANDROID_KEY_ALIAS}
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
           storeFile=${HOME}/visora-release.jks
           EOF
+          echo "Wrote android/key.properties"
           ls -la android || true
-        env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
 
       - name: Flutter pub get
         working-directory: ${{ env.PROJECT_DIR }}
