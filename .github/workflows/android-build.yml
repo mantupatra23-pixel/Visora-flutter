@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 env:
-  # set this to subfolder if your flutter app isn't at repo root, e.g. 'app'
-  PROJECT_DIR: ''
+  PROJECT_DIR: ''          # set this to subfolder if your flutter app isn't at repo root, e.g. 'app'
+  API_BASE_URL: 'https://visora-backend-v2.onrender.com'
 
 jobs:
   build-android:
@@ -20,7 +20,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          # don't auto-fetch submodules (avoids submodule URL errors)
           fetch-depth: 0
 
       - name: Setup Java (for Gradle)
@@ -32,7 +31,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ secrets.FLUTTER_VERSION || 'stable' }}
+          flutter-version: 'stable'
 
       - name: Decode Android keystore
         if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
@@ -67,15 +66,8 @@ jobs:
       - name: Build release APK (signed)
         working-directory: ${{ env.PROJECT_DIR }}
         env:
-          API_BASE_URL: ${{ secrets.API_BASE_URL || 'https://visora-backend-v2.onrender.com' }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL || env.API_BASE_URL }}
         run: flutter build apk --release --no-shrink --dart-define=API_BASE_URL=${API_BASE_URL}
-
-      # If you want AAB instead, comment the APK step above and uncomment below:
-      #- name: Build app bundle (AAB)
-      #  working-directory: ${{ env.PROJECT_DIR }}
-      #  env:
-      #    API_BASE_URL: ${{ secrets.API_BASE_URL || 'https://visora-backend-v2.onrender.com' }}
-      #  run: flutter build appbundle --release --dart-define=API_BASE_URL=${API_BASE_URL}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
