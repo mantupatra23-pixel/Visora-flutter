@@ -1,25 +1,21 @@
-rootProject.name = "Visora-flutter"
+rootProject.name = "Visora AI"
 
 setBinding(new Binding([gradle: this]))
+
 evaluate(new File(
         settingsDir,
         "flutter_settings.gradle"
 ))
 
-include ':app'
-
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
 
     repositories {
-        // Google Official
         google()
+        mavenCentral()
 
-        // Google Maven Mirrors (Fix Resource Missing Error)
+        // Extra mirrors to fix missing dependencies
         maven { url "https://maven.google.com" }
         maven { url "https://dl.google.com/dl/android/maven2/" }
-
-        // Central Repo
-        mavenCentral()
     }
 }
