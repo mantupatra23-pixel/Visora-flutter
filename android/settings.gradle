@@ -1,7 +1,8 @@
-rootProject.name = "Visora AI"
+rootProject.name = "visora_ai"
 
 setBinding(new Binding([gradle: this]))
 
+// Flutter auto-generated settings
 evaluate(new File(
         settingsDir,
         "flutter_settings.gradle"
@@ -13,8 +14,6 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-
-        // Extra mirrors to fix missing dependencies
         maven { url "https://maven.google.com" }
         maven { url "https://dl.google.com/dl/android/maven2/" }
     }
