@@ -1,26 +1,18 @@
 import 'package:flutter/material.dart';
 
-void main() => runApp(const VisoraApp());
+void main() {
+  runApp(const MyApp());
+}
 
-class VisoraApp extends StatelessWidget {
-  const VisoraApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Visora AI Studio',
-      debugShowCheckedModeBanner: false,
-      home: const HomePage(),
-    );
-  }
-}
-
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Visora AI Studio')),
-      body: const Center(child: Text('Build test: Visora minimal app')),
+      home: Scaffold(
+        body: Center(child: Text("Visora AI")),
+      ),
     );
   }
 }
