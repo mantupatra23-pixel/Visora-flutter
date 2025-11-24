@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  PROJECT_DIR: ''          # set this to subfolder if your flutter app isn't at repo root, e.g. 'app'
+  PROJECT_DIR: ''                         # set this if your flutter project is in a subfolder
   API_BASE_URL: 'https://visora-backend-v2.onrender.com'
 
 jobs:
@@ -65,9 +65,9 @@ jobs:
 
       - name: Build release APK (signed)
         working-directory: ${{ env.PROJECT_DIR }}
-        env:
-          API_BASE_URL: ${{ secrets.API_BASE_URL || env.API_BASE_URL }}
-        run: flutter build apk --release --no-shrink --dart-define=API_BASE_URL=${API_BASE_URL}
+        run: |
+          echo "Using API_BASE_URL=${API_BASE_URL}"
+          flutter build apk --release --no-shrink --dart-define=API_BASE_URL=${API_BASE_URL}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
