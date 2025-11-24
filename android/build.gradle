@@ -1,8 +1,9 @@
-// android/build.gradle (top-level) — add this near the top of file
-
-// Workaround: exclude ErrorProne annotations that sometimes fail to download in CI mirrors
+// add this at the very top of android/build.gradle (before buildscript { ... })
+/* Workaround: exclude ErrorProne annotations that sometimes fail to download in CI */
 configurations.all {
+    // exclude both annotation artifact and parent to avoid HTTP GET failures
     exclude group: "com.google.errorprone", module: "error_prone_annotations"
+    exclude group: "com.google.errorprone", module: "error_prone_parent"
 }
 
 buildscript {
