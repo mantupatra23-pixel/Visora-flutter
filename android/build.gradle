@@ -1,42 +1,46 @@
-// add this at the very top of android/build.gradle (before buildscript { ... })
-/* Workaround: exclude ErrorProne annotations that sometimes fail to download in CI */
-configurations.all {
-    // exclude both annotation artifact and parent to avoid HTTP GET failures
-    exclude group: "com.google.errorprone", module: "error_prone_annotations"
-    exclude group: "com.google.errorprone", module: "error_prone_parent"
-}
+// android/build.gradle (TOP-LEVEL)
 
 buildscript {
     ext.kotlin_version = "1.9.25"
+
+    // FIX: Disable ErrorProne (CI build issue)
+    configurations.all {
+        exclude group: "com.google.errorprone", module: "error_prone_annotations"
+        exclude group: "com.google.errorprone", module: "error_prone_parent"
+    }
+
     repositories {
-        // IMPORTANT: google() first so Android/Google artifacts resolve properly
         google()
-        maven { url "https://maven.google.com" } // fallback
         mavenCentral()
         gradlePluginPortal()
+        maven { url "https://maven.google.com" }
+        maven { url "https://dl.google.com/dl/android/maven2" }
     }
+
     dependencies {
-        classpath "com.android.tools.build:gradle:8.1.2"     // use appropriate gradle plugin version
+        classpath "com.android.tools.build:gradle:8.1.2"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath "com.google.gms:google-services:4.4.0"
+        classpath "com.google.gms:google-services:4.4.2"
     }
 }
 
 allprojects {
     repositories {
-        // keep google() first
         google()
-        maven { url "https://maven.google.com" } // fallback
         mavenCentral()
+        maven { url "https://maven.google.com" }
+        maven { url "https://dl.google.com/dl/android/maven2" }
+        jcenter() // safe fallback
     }
 }
 
 rootProject.buildDir = "../build"
+
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
     project.evaluationDependsOn(":app")
 
-    // Safe Kotlin compiler override (optional)
+    // Safe Kotlin Compiler
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         kotlinOptions {
             jvmTarget = "17"
@@ -46,6 +50,7 @@ subprojects {
     }
 }
 
+// Clean task
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
