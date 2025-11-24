@@ -1,4 +1,4 @@
-// IMPORTANT: pluginManagement must be first in the script
+// IMPORTANT: pluginManagement must be first in the file
 pluginManagement {
     repositories {
         google()
@@ -25,4 +25,10 @@ include ':app'
 
 // Evaluate flutter settings (do not move this above pluginManagement)
 setBinding(new Binding([gradle: this]))
-evaluate(new File(settingsDir, "flutter_settings.gradle"))
+
+File flutterSettings = new File(settingsDir, "flutter_settings.gradle")
+if (flutterSettings.exists()) {
+    evaluate(flutterSettings)
+} else {
+    println "NOTE: flutter_settings.gradle not found — skipping evaluate()"
+}
