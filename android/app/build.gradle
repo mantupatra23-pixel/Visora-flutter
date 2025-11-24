@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace "com.example.visora_ai_flutter"
+    namespace "com.visora.ai"
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.example.visora_ai_flutter"
+        applicationId "com.visora.ai"
         minSdk 23
         targetSdk 34
         versionCode 1
