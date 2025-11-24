@@ -1,5 +1,4 @@
-rootProject.name = "visora_ai"
-
+// IMPORTANT: pluginManagement must be first in the script
 pluginManagement {
     repositories {
         google()
@@ -20,8 +19,10 @@ dependencyResolutionManagement {
     }
 }
 
+// project name after pluginManagement and dependencyResolutionManagement
+rootProject.name = "visora_ai"
+include ':app'
+
+// Evaluate flutter settings (do not move this above pluginManagement)
 setBinding(new Binding([gradle: this]))
-evaluate(new File(
-        settingsDir,
-        "flutter_settings.gradle"
-))
+evaluate(new File(settingsDir, "flutter_settings.gradle"))
