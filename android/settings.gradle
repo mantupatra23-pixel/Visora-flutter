@@ -1,29 +1,35 @@
+// IMPORTANT: pluginManagement must be first in the file
 pluginManagement {
     repositories {
         google()
-        maven { url "https://maven.google.com" }
+        maven { url "https://maven.google.com" } // explicit google mirror fallback
         mavenCentral()
         gradlePluginPortal()
     }
 }
 
 dependencyResolutionManagement {
+    // preferSet helps select repositories in prefered order
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
+        // Keep google() first
         google()
-        maven { url "https://maven.google.com" }
-        mavenCentral()
+        maven { url "https://maven.google.com" } // explicit google mirror fallback
+        // fallback to dl.google if needed
         maven { url "https://dl.google.com/dl/android/maven2/" }
+        mavenCentral()
     }
 }
 
+// project name after pluginManagement and dependencyResolutionManagement
 rootProject.name = "visora_ai"
 include ':app'
 
+// Evaluate flutter settings (do not move this above)
 setBinding(new Binding([gradle: this]))
-File flutterSettings = new File(settingsDir, "flutter_settings.gradle")
+def flutterSettings = new File(settingsDir, "flutter_settings.gradle")
 if (flutterSettings.exists()) {
     evaluate(flutterSettings)
 } else {
-    println "NOTE: flutter_settings.gradle not found — skipping evaluate()"
+    println "NOTE: flutter_settings.gradle not found"
 }
