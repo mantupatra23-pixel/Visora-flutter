@@ -1,38 +1,48 @@
+// android/build.gradle (top-level)
 buildscript {
-    ext.kotlin_version = '1.9.25'
+    ext.kotlin_version = "1.9.25"
+
     repositories {
         google()
         mavenCentral()
-        gradlePluginPortal()
+        // fallback google maven url (sometimes helpful on CI)
+        maven { url "https://dl.google.com/dl/android/maven2/" }
     }
+
     dependencies {
-        classpath "com.android.tools.build:gradle:8.2.2"
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath "com.google.gms:google-services:4.4.0"
+        // Android Gradle Plugin
+        classpath "com.android.tools.build:gradle:8.1.1"
+
+        // Kotlin gradle plugin
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlin_version}"
+
+        // Optional: google services plugin (uncomment if you use firebase plugin)
+        // classpath "com.google.gms:google-services:4.3.15"
     }
 }
 
 allprojects {
     repositories {
-        google()
+        // prefer mavenCentral and google
         mavenCentral()
-        gradlePluginPortal()
-        maven { url "https://maven.google.com" }
+        google()
+        // google direct URL (helpful if some CI DNS prefers full URL)
         maven { url "https://dl.google.com/dl/android/maven2/" }
+        // if you ever see old jcenter artifacts missing, add jcenter (temporary)
+        // maven { url "https://jcenter.bintray.com/" }
     }
 }
 
+// keep gradle build dir outside android folder (optional)
 rootProject.buildDir = "../build"
-
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
     project.evaluationDependsOn(":app")
 
+    // Kotlin compiler options for modules that apply Kotlin plugin
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         kotlinOptions {
             jvmTarget = "17"
-            apiVersion = "1.9"
-            languageVersion = "1.9"
             freeCompilerArgs += ["-Xskip-metadata-version-check"]
         }
     }

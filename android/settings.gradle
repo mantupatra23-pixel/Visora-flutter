@@ -1,20 +1,19 @@
-rootProject.name = "visora_ai"
+// android/settings.gradle
+rootProject.name = "visora_ai" // set your project name
 
-setBinding(new Binding([gradle: this]))
+include ':app'
 
-// Flutter auto-generated settings
-evaluate(new File(
-        settingsDir,
-        "flutter_settings.gradle"
-))
+// Evaluate Flutter-provided settings (required for Flutter Android projects)
+if (file("$rootDir/flutter_settings.gradle").exists()) {
+    apply from: "$rootDir/flutter_settings.gradle"
+}
 
+// Dependency resolution management (safer control of repos)
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
-
     repositories {
-        google()
         mavenCentral()
-        maven { url "https://maven.google.com" }
+        google()
         maven { url "https://dl.google.com/dl/android/maven2/" }
     }
 }
