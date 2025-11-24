@@ -6,9 +6,9 @@ buildscript {
         gradlePluginPortal()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.5.2'
+        classpath "com.android.tools.build:gradle:8.2.2"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath 'com.google.gms:google-services:4.4.2'
+        classpath "com.google.gms:google-services:4.4.0"
     }
 }
 
@@ -17,6 +17,8 @@ allprojects {
         google()
         mavenCentral()
         gradlePluginPortal()
+        maven { url "https://maven.google.com" }
+        maven { url "https://dl.google.com/dl/android/maven2/" }
     }
 }
 
@@ -26,10 +28,9 @@ subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
     project.evaluationDependsOn(":app")
 
-    // ✅ Safe Kotlin compiler override (no afterEvaluate)
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         kotlinOptions {
-            jvmTarget = '17'
+            jvmTarget = "17"
             apiVersion = "1.9"
             languageVersion = "1.9"
             freeCompilerArgs += ["-Xskip-metadata-version-check"]
