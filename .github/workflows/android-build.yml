@@ -1,9 +1,8 @@
-name: Build & Auto-Release Signed APK (Cloud)
+name: Build Release APK
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
@@ -11,48 +10,48 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout repo
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      # Setup Flutter
+      - name: Setup Java (Temurin 17)
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: "17"
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.19.6"
+          flutter-version: "3.24.3"
 
-      # Decode keystore
       - name: Decode Keystore
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/visora-release.jks
-          echo "Keystore decoded"
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
 
-      # Create key.properties
       - name: Create key.properties
         run: |
-          cat <<EOF > android/key.properties
-          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
-          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-          storeFile=visora-release.jks
-          EOF
-          echo "key.properties created"
+          echo "storePassword=${{ secrets.KEY_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=release.keystore" >> android/key.properties
 
-      # Fix Android embedding + recreate android folder if needed
       - name: Recreate Android folder (fix gradle issues)
-        run: flutter create . --platforms=android --project-name visora_ai_flutter || true
+        run: flutter create .
 
-      # Install dependencies
       - name: Flutter pub get
         run: flutter pub get
 
-      # Build release APK
-      - name: Build Release APK
-        run: flutter build apk --release --verbose
+      - name: Refresh Gradle dependencies
+        working-directory: android
+        run: ./gradlew --no-daemon --refresh-dependencies
 
-      # Upload APK artifact
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
+      - name: Build Release APK
+        run: flutter build apk --release --verbose --no-shrink
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
         with:
-          name: Visora-AI-APK
+          name: visora_ai-apk
           path: build/app/outputs/flutter-apk/app-release.apk
