@@ -1,22 +1,50 @@
+// android/build.gradle (top-level) — add this near the top of file
+
+// Workaround: exclude ErrorProne annotations that sometimes fail to download in CI mirrors
+configurations.all {
+    exclude group: "com.google.errorprone", module: "error_prone_annotations"
+}
+
 buildscript {
     ext.kotlin_version = "1.9.25"
-
-    // Workaround: exclude ErrorProne annotations that fail to download in CI
-    configurations.all {
-        exclude group: "com.google.errorprone", module: "error_prone_annotations"
-    }
-
     repositories {
-        // IMPORTANT: google() first so Android/Google artifacts resolve first
+        // IMPORTANT: google() first so Android/Google artifacts resolve properly
         google()
-        maven { url "https://maven.google.com" } // optional explicit fallback
+        maven { url "https://maven.google.com" } // fallback
         mavenCentral()
         gradlePluginPortal()
     }
-
     dependencies {
-        classpath "com.android.tools.build:gradle:8.2.2"
+        classpath "com.android.tools.build:gradle:8.1.2"     // use appropriate gradle plugin version
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath "com.google.gms:google-services:4.4.2"
+        classpath "com.google.gms:google-services:4.4.0"
     }
+}
+
+allprojects {
+    repositories {
+        // keep google() first
+        google()
+        maven { url "https://maven.google.com" } // fallback
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = "../build"
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+    project.evaluationDependsOn(":app")
+
+    // Safe Kotlin compiler override (optional)
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        kotlinOptions {
+            jvmTarget = "17"
+            apiVersion = "1.9"
+            languageVersion = "1.9"
+        }
+    }
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
 }
