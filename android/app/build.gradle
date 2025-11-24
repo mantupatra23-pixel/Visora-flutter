@@ -1,8 +1,9 @@
+// android/app/build.gradle
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
-    id 'com.google.gms.google-services'
     id 'dev.flutter.flutter-gradle-plugin'
+    // NOTE: do NOT apply 'com.google.gms.google-services' here (we removed Firebase for CI)
 }
 
 android {
@@ -19,14 +20,37 @@ android {
         multiDexEnabled true
     }
 
+    // --- SIGNING CONFIGS ---
+    signingConfigs {
+        release {
+            // If your CI writes the keystore to android/app/visora-release.jks (recommended),
+            // keep the line below:
+            storeFile file("visora-release.jks")
+
+            // If your CI decodes keystore to $HOME/visora-release.jks (runner home),
+            // comment the above line and uncomment the line below:
+            // storeFile file(System.getenv("HOME") + "/visora-release.jks")
+
+            // Read passwords and alias from environment variables (set as GitHub secrets)
+            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: ""
+            keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: ""
+            keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: ""
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            // Sign with our release signingConfig
+            signingConfig signingConfigs.release
+
+            // Keep disabled for easier debugging in CI
             minifyEnabled false
             shrinkResources false
-            // 👇 ye ensure karega ke Firebase aur kotlin libs obfuscate na ho
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+
+            // Uncomment if you have proguard rules
+            // proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+
         debug {
             minifyEnabled false
         }
@@ -43,7 +67,7 @@ android {
 
     packagingOptions {
         resources {
-            excludes += ['META-INF/DEPENDENCIES', 'META-INF/NOTICE', 'META-INF/LICENSE']
+            excludes += ['META-INF/DEPENDENCIES', 'META-INF/NOTICE', 'META-INF/NOTICE.txt', 'META-INF/LICENSE', 'META-INF/LICENSE.txt']
         }
     }
 }
@@ -53,17 +77,9 @@ flutter {
 }
 
 dependencies {
-    // ✅ Use Firebase BOM for version management
-    implementation platform('com.google.firebase:firebase-bom:33.4.0')
-
-    // 🔥 Firebase modules
-    implementation 'com.google.firebase:firebase-auth'
-    implementation 'com.google.firebase:firebase-analytics'
-    implementation 'com.google.firebase:firebase-messaging'
-    implementation 'com.google.firebase:firebase-storage'
-    implementation 'com.google.firebase:firebase-crashlytics'
-
-    // AndroidX core dependency
     implementation 'androidx.core:core-ktx:1.13.1'
     implementation 'androidx.multidex:multidex:2.0.1'
+
+    // Add other Android native deps here if needed
+    // Firebase lines removed (we are building without google-services)
 }

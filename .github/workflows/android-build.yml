@@ -1,89 +1,44 @@
-name: Android CI - Build APK (No Firebase) - Safe Checkout
+name: Android CI - Build APK
 
 on:
   push:
-    branches: [ main, master ]
-  workflow_dispatch:
-
-env:
-  PROJECT_DIR: ''                         # set this if your flutter project is in a subfolder
-  API_BASE_URL: 'https://visora-backend-v2.onrender.com'
+    branches:
+      - main
 
 jobs:
   build-android:
     runs-on: ubuntu-latest
-    concurrency:
-      group: android-build-${{ github.ref }}
-      cancel-in-progress: true
 
     steps:
-      - name: Checkout repo (no submodules)
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           submodules: false
-          persist-credentials: false
 
-      - name: Show repo root & git status (debug)
-        run: |
-          echo "=== ls -la repo root ==="
-          ls -la
-          echo "=== show .gitmodules if exists ==="
-          if [ -f .gitmodules ]; then echo ".gitmodules found:"; cat .gitmodules; else echo ".gitmodules NOT found"; fi
-          echo "=== git remote -v ==="
-          git remote -v || true
-          echo "=== git status short ==="
-          git status --porcelain -b || true
-
-      - name: Setup Java (for Gradle)
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '11'
+          java-version: '17'
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 'stable'
+          channel: 'stable'
+          cache: true
 
-      - name: Decode Android keystore (if provided)
-        run: |
-          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
-            echo "Decoding keystore from secrets..."
-            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > $HOME/visora-release.jks
-            ls -la $HOME/visora-release.jks || true
-          else
-            echo "ANDROID_KEYSTORE_BASE64 secret not set. Skipping keystore decode."
-          fi
-
-      - name: Create android/key.properties
-        run: |
-          mkdir -p android
-          cat > android/key.properties <<EOF
-          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
-          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-          storeFile=${HOME}/visora-release.jks
-          EOF
-          echo "Wrote android/key.properties"
-          ls -la android || true
-
-      - name: Flutter pub get
-        working-directory: ${{ env.PROJECT_DIR }}
+      - name: Flutter Pub Get
         run: flutter pub get
 
-      - name: Run analyzer (optional)
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: flutter analyze || true
-
-      - name: Build release APK (signed)
-        working-directory: ${{ env.PROJECT_DIR }}
+      - name: Decode Keystore
         run: |
-          echo "Using API_BASE_URL=${API_BASE_URL}"
-          flutter build apk --release --no-shrink --dart-define=API_BASE_URL=${API_BASE_URL}
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/visora-release.jks
 
-      - name: Upload APK artifact
+      - name: Build Release APK
+        run: flutter build apk --release
+
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: visora-release-apk
-          path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
