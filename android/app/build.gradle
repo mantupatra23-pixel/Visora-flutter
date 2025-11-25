@@ -5,11 +5,10 @@ plugins {
 
 import java.util.Properties
 
-// Load local.properties to find Flutter SDK path (used by CI)
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader("UTF-8") { reader ->
+    localPropertiesFile.withReader('UTF-8') { reader ->
         localProperties.load(reader)
     }
 }
@@ -18,6 +17,12 @@ def flutterRoot = localProperties.getProperty('flutter.sdk')
 if (flutterRoot == null) {
     flutterRoot = System.getenv("FLUTTER_ROOT")
 }
+
+if (flutterRoot == null) {
+    throw new GradleException("Flutter SDK not found. Set flutter.sdk in local.properties or FLUTTER_ROOT.")
+}
+
+apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
     namespace "com.visora.ai"
@@ -30,12 +35,6 @@ android {
         versionCode 1
         versionName "1.0"
         multiDexEnabled true
-    }
-
-    signingConfigs {
-        release {
-            // storeFile file("visora-release.jks")
-        }
     }
 
     buildTypes {
@@ -56,19 +55,8 @@ android {
     kotlinOptions {
         jvmTarget = '17'
     }
-
-    packagingOptions {
-        resources {
-            excludes += [
-                "META-INF/DEPENDENCIES",
-                "META-INF/NOTICE",
-                "META-INF/LICENSE"
-            ]
-        }
-    }
 }
 
-// flutter block MUST be here
 flutter {
     source '../../.'
 }
@@ -77,9 +65,3 @@ dependencies {
     implementation "androidx.core:core-ktx:1.13.1"
     implementation "androidx.multidex:multidex:2.0.1"
 }
-
-if (flutterRoot == null) {
-    throw new GradleException("Flutter SDK not found. Set flutter.sdk in local.properties or FLUTTER_ROOT.")
-}
-
-apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
