@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
@@ -29,42 +31,72 @@ jobs:
           channel: stable
           flutter-version: '3.22.0'
 
-      # ---------- IMPORTANT: ensure we DON'T overwrite existing android/ ----------
+      # Ensure android folder exists (generate only if missing)
       - name: Ensure android folder exists
         run: |
           if [ ! -d "./android" ]; then
-            echo "Android folder missing → generating only once"
-            # Generate android files from current flutter project (only if missing)
+            echo "Android folder missing → generating"
+            flutter pub get
+            # create android platform only
             flutter create --platforms=android --org com.visora.ai --project-name visora_ai .
+            flutter pub get
           else
-            echo "Android folder exists → NOT regenerating"
+            echo "Android folder exists → skipping generation"
           fi
         shell: bash
 
-      - name: Create android/local.properties
+      # If build.gradle needs newer Kotlin, update it to a safe version
+      - name: Ensure Kotlin Gradle plugin version (fix common CI failures)
         run: |
-          echo ">>> Creating android/local.properties"
-          # ensure flutter is on PATH from action
-          FLUTTER_BIN=$(which flutter || true)
-          if [ -z "$FLUTTER_BIN" ]; then
-            echo "flutter not found on PATH"
-            exit 1
+          if [ -f android/build.gradle ]; then
+            echo "Setting ext.kotlin_version = 1.9.25 in android/build.gradle"
+            # Replace or insert ext.kotlin_version property
+            if grep -q "ext.kotlin_version" android/build.gradle; then
+              sed -i "s/ext.kotlin_version *= *.*/ext.kotlin_version = \"1.9.25\"/g" android/build.gradle
+            else
+              # Insert under buildscript { line
+              sed -i "0,/buildscript {/s//buildscript {\\n    ext.kotlin_version = \"1.9.25\"/" android/build.gradle
+            fi
+            echo "Updated android/build.gradle:"
+            sed -n '1,120p' android/build.gradle || true
+          else
+            echo "android/build.gradle not found -> skipping Kotlin update"
           fi
-          FLUTTER_ROOT=$(dirname "$(dirname "$FLUTTER_BIN")")
-          echo "flutter.sdk=${FLUTTER_ROOT}" > android/local.properties
-          cat android/local.properties
+        shell: bash
+
+      - name: Create android/local.properties (point to Flutter SDK)
+        run: |
+          # Try to create a minimal local.properties to avoid Flutter SDK missing checks
+          if [ ! -d "android" ]; then
+            echo "android folder missing, cannot create local.properties"
+          else
+            FLUTTER_BIN="$(which flutter || true)"
+            if [ -z "$FLUTTER_BIN" ]; then
+              echo "flutter not found on PATH"
+            fi
+            FLUTTER_ROOT="$(dirname $(dirname "$FLUTTER_BIN"))"
+            echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+            echo "Created android/local.properties (flutter.sdk set)."
+            cat android/local.properties
+          fi
         shell: bash
 
       - name: Flutter doctor
         run: flutter doctor -v
+        shell: bash
 
       - name: Flutter pub get
         run: flutter pub get
+        shell: bash
 
-      - name: Build APK
-        run: flutter build apk --release --no-shrink
+      - name: Build APK (release)
+        run: |
+          # fail fast on build errors but print verbose logs
+          flutter build apk --release --no-shrink -v
+        shell: bash
 
       - name: Upload APK
+        if: success() && always()
         uses: actions/upload-artifact@v4
         with:
           name: visora-ai-apk
