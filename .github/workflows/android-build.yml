@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -25,7 +26,15 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: "3.22.0"   # ← Latest stable with Dart 3.4+
+          flutter-version: "3.22.0"
+
+      # 🔥 MOST IMPORTANT STEP — FIXES FLUTTER_ROOT ERROR
+      - name: Create android/local.properties
+        run: |
+          echo ">>> Creating android/local.properties"
+          FLUTTER_DIR=$(flutter --version | grep " • Framework" | awk '{print $3}')
+          echo "flutter.sdk=$FLUTTER_DIR" > android/local.properties
+          cat android/local.properties
 
       - name: Flutter doctor
         run: flutter doctor -v
