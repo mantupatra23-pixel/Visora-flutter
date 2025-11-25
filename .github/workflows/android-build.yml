@@ -1,43 +1,81 @@
-name: Build Android APK
+name: Android CI - Build Release APK
 
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # change PRODUCT_FLAVOR / BUILD_TYPE if needed
+      BUILD_MODE: release
+      APK_OUTPUT: app-release.apk
 
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup Flutter
-        uses: flutter-actions/setup-flutter@v2
-        with:
-          channel: stable
-          version: "3.10.6"
-
-      - name: Flutter Version
-        run: flutter --version
-
-      - name: Accept Android licenses
-        run: yes | flutter doctor --android-licenses
-
-      - name: Setup Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: '17'
 
-      - name: Install dependencies
+      - name: Setup Flutter (install chosen stable version)
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.13.0'   # <-- change this if you want a different Flutter version
+          channel: stable
+
+      - name: Verify flutter & dart
+        run: |
+          flutter --version
+          dart --version
+
+      - name: Accept Android licenses
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
+        run: |
+          yes | flutter doctor --android-licenses || true
+          flutter doctor -v
+
+      - name: Install Android SDK components
+        run: |
+          # ensure required Android SDK components exist on runner
+          sudo apt-get update
+          # sdkmanager commands (inside android sdk tools)
+          yes | sdkmanager --licenses || true
+        shell: bash
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            **/.dart_tool
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Flutter pub get
         run: flutter pub get
 
-      - name: Build APK
-        run: flutter build apk --release
+      - name: Build release APK
+        run: |
+          # If you have flavor/build variants adjust command accordingly:
+          # flutter build apk --release --flavor yourFlavor -t lib/main.dart
+          flutter build apk --release --no-shrink
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: release-apk
+          path: build/app/outputs/flutter-apk/*.apk
+
+      - name: Post cleanup (optional)
+        if: always()
+        run: echo "done"
