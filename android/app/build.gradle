@@ -1,13 +1,25 @@
 // android/app/build.gradle
+import java.util.Properties
+
+// Load local.properties to find Flutter SDK path (used by the Flutter Gradle script)
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader -> localProperties.load(reader) }
+}
+
+def flutterRoot = localProperties.getProperty('flutter.sdk')
+if (flutterRoot == null) {
+    flutterRoot = System.getenv("FLUTTER_ROOT")
+}
+
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
-    id 'dev.flutter.flutter-gradle-plugin'
-    // NOTE: do NOT apply 'com.google.gms.google-services' here (we removed Firebase for CI)
 }
 
 android {
-    namespace "com.visora.ai"
+    namespace "com.visora.ai"              // change if your package is different
     compileSdk 34
 
     defaultConfig {
@@ -20,35 +32,30 @@ android {
         multiDexEnabled true
     }
 
-    // --- SIGNING CONFIGS ---
     signingConfigs {
         release {
-            // If your CI writes the keystore to android/app/visora-release.jks (recommended),
-            // keep the line below:
-            storeFile file("visora-release.jks")
+            // If your CI writes the keystore to file, keep the line below:
+            // storeFile file("visora-release.jks")
 
-            // If your CI decodes keystore to $HOME/visora-release.jks (runner home),
-            // comment the above line and uncomment the line below:
+            // If your CI decodes keystore to $HOME, use:
             // storeFile file(System.getenv("HOME") + "/visora-release.jks")
 
-            // Read passwords and alias from environment variables (set as GitHub secrets)
-            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: ""
-            keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: ""
-            keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: ""
+            // Read passwords and alias from environment variables (recommended in CI)
+            // storePassword System.getenv("ANDROID_KEY_PASSWORD")
+            // keyAlias System.getenv("ANDROID_KEY_ALIAS")
+            // keyPassword System.getenv("ANDROID_KEY_PASSWORD")
         }
     }
 
     buildTypes {
         release {
-            // Sign with our release signingConfig
-            signingConfig signingConfigs.release
+            // Use release signing when you want to upload signed APK / AAB
+            // signingConfig signingConfigs.release
 
-            // Keep disabled for easier debugging in CI
+            // For CI debugging, keep minify disabled initially
             minifyEnabled false
             shrinkResources false
-
-            // Uncomment if you have proguard rules
-            // proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
 
         debug {
@@ -67,19 +74,30 @@ android {
 
     packagingOptions {
         resources {
-            excludes += ['META-INF/DEPENDENCIES', 'META-INF/NOTICE', 'META-INF/NOTICE.txt', 'META-INF/LICENSE', 'META-INF/LICENSE.txt']
+            excludes += [
+                "META-INF/DEPENDENCIES",
+                "META-INF/NOTICE",
+                "META-INF/LICENSE"
+            ]
         }
     }
 }
 
 flutter {
+    // this points the module back to the Flutter project root
     source '../..'
 }
 
 dependencies {
-    implementation 'androidx.core:core-ktx:1.13.1'
-    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation "androidx.core:core-ktx:1.13.1"
+    implementation "androidx.multidex:multidex:2.0.1"
 
-    // Add other Android native deps here if needed
-    // Firebase lines removed (we are building without google-services)
+    // Add any additional native libs your app needs here
 }
+
+// Apply the Flutter Gradle script (this must run after android{} block so the Flutter build hooks are attached)
+if (flutterRoot == null) {
+    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in local.properties or set FLUTTER_ROOT environment variable.")
+}
+
+apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
