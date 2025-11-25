@@ -1,20 +1,13 @@
 buildscript {
     ext.kotlin_version = "1.9.25"
 
-    // Disable ErrorProne for CI
-    configurations.all {
-        exclude group: "com.google.errorprone", module: "error_prone_annotations"
-        exclude group: "com.google.errorprone"
-    }
-
     repositories {
         google()
         mavenCentral()
         gradlePluginPortal()
         maven { url "https://maven.google.com" }
         maven { url "https://dl.google.com/dl/android/maven2" }
-        // IMPORTANT Flutter repo (missing earlier)
-        maven { url "https://storage.googleapis.com/download.flutter.io" }
+        maven { url "https://storage.googleapis.com/download.flutter.io" }  // REQUIRED
     }
 
     dependencies {
@@ -30,9 +23,7 @@ allprojects {
         mavenCentral()
         maven { url "https://maven.google.com" }
         maven { url "https://dl.google.com/dl/android/maven2" }
-        // IMPORTANT Flutter repo (fixes flutter_embedding error)
-        maven { url "https://storage.googleapis.com/download.flutter.io" }
-        jcenter() // safe fallback
+        maven { url "https://storage.googleapis.com/download.flutter.io" }  // REQUIRED
     }
 }
 
@@ -41,18 +32,8 @@ rootProject.buildDir = "../build"
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
     project.evaluationDependsOn(":app")
-
-    // Kotlin compiler
-    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-        kotlinOptions {
-            jvmTarget = "17"
-            apiVersion = "1.9"
-            languageVersion = "1.9"
-        }
-    }
 }
 
-// Clean task
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
