@@ -29,14 +29,13 @@ jobs:
           channel: stable
           flutter-version: '3.22.0'
 
-      # ----- IMPORTANT: ensure android exists, but DO NOT overwrite if present -----
+      # ---------- IMPORTANT: ensure we DON'T overwrite existing android/ ----------
       - name: Ensure android folder exists
         run: |
           if [ ! -d "./android" ]; then
             echo "Android folder missing → generating only once"
-            flutter pub get
+            # Generate android files from current flutter project (only if missing)
             flutter create --platforms=android --org com.visora.ai --project-name visora_ai .
-            flutter pub get
           else
             echo "Android folder exists → NOT regenerating"
           fi
@@ -45,14 +44,15 @@ jobs:
       - name: Create android/local.properties
         run: |
           echo ">>> Creating android/local.properties"
+          # ensure flutter is on PATH from action
           FLUTTER_BIN=$(which flutter || true)
           if [ -z "$FLUTTER_BIN" ]; then
             echo "flutter not found on PATH"
             exit 1
           fi
-          FLUTTER_ROOT=$(dirname $(dirname "$FLUTTER_BIN"))
+          FLUTTER_ROOT=$(dirname "$(dirname "$FLUTTER_BIN")")
           echo "flutter.sdk=${FLUTTER_ROOT}" > android/local.properties
-          echo "Created android/local.properties with flutter.sdk=$FLUTTER_ROOT"
+          cat android/local.properties
         shell: bash
 
       - name: Flutter doctor
