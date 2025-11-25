@@ -3,15 +3,11 @@ name: Android Build CI
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      JAVA_HOME: /usr/lib/jvm/java-17-temurin
 
     steps:
       - name: Checkout repository
@@ -23,45 +19,33 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Flutter (stable)
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: '3.22.0'
 
-      # ========== SAFE android generation (only if android/ missing) ==========
-      - name: Ensure android folder exists (safe)
+      # 💥 Full FIX — recreate android folder
+      - name: Recreate Android folder (fresh)
         run: |
-          if [ -d "./android" ]; then
-            echo "android/ exists -> skipping create (no overwrite)."
-          else
-            echo "android/ NOT found -> creating android files (one-time)."
-            flutter pub get
-            # create android platform files only (will create other default files)
-            flutter create --platforms=android --org com.visora.ai --project-name visora_ai .
-            flutter pub get
-          fi
-        shell: bash
+          echo ">>> Deleting old android folder (broken gradle)"
+          rm -rf android
+          echo ">>> Creating new clean android project"
+          flutter create --platforms=android --org com.visora.ai --project-name visora_ai .
+          flutter pub get
 
-      # create android/local.properties for Gradle -> points to Flutter SDK on runner
+      # Create local.properties
       - name: Create android/local.properties
         run: |
-          echo ">>> Creating android/local.properties"
-          FLUTTER_BIN=$(which flutter || true)
-          if [ -z "$FLUTTER_BIN" ]; then
-            echo "flutter not found on PATH"
-            exit 1
-          fi
+          FLUTTER_BIN=$(which flutter)
           FLUTTER_ROOT=$(dirname "$(dirname "$FLUTTER_BIN")")
           echo "flutter.sdk=${FLUTTER_ROOT}" > android/local.properties
-          echo "Created android/local.properties:"
           cat android/local.properties
-        shell: bash
 
-      - name: Flutter doctor
+      - name: Flutter Doctor
         run: flutter doctor -v
 
-      - name: Flutter pub get
+      - name: Pub Get
         run: flutter pub get
 
       - name: Build APK
