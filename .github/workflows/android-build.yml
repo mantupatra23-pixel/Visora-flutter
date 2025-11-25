@@ -1,45 +1,42 @@
-name: Android CI
+name: Build Android APK
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
     branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Flutter (official)
+      - name: Setup Flutter
         uses: flutter-actions/setup-flutter@v2
         with:
           channel: stable
-          version: '3.10.6'   # fixed version to avoid auto-detect failures
+          version: "3.10.6"
 
-      - name: Flutter --version
+      - name: Flutter Version
         run: flutter --version
 
       - name: Accept Android licenses
         run: yes | flutter doctor --android-licenses
 
-      - name: Setup Java 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: temurin
+          java-version: 17
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build release APK
+      - name: Build APK
         run: flutter build apk --release
 
-      - name: Upload APK artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release
