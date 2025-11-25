@@ -27,28 +27,29 @@ jobs:
           flutter-version: '3.13.0'
           channel: stable
 
-      - name: Verify flutter
-        run: flutter --version
-
-      - name: Install Android SDK Commandline tools
+      - name: Install Android Commandline Tools
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y wget unzip
-          mkdir -p $HOME/android-sdk
-          cd $HOME/android-sdk
+          sudo apt-get install -y unzip wget
+
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          cd $HOME/android-sdk/cmdline-tools
+
           wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O tools.zip
-          unzip tools.zip -d cmdline-tools-temp
-          mkdir -p cmdline-tools/latest
-          mv cmdline-tools-temp/* cmdline-tools/latest/
+          unzip tools.zip -d latest
+
           rm tools.zip
         shell: bash
 
       - name: Install Android SDK components
         run: |
           export ANDROID_HOME=$HOME/android-sdk
-          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
+          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
+
           yes | sdkmanager --licenses
-          sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+          sdkmanager "platform-tools"
+          sdkmanager "platforms;android-33"
+          sdkmanager "build-tools;33.0.2"
         shell: bash
 
       - name: Flutter pub get
