@@ -1,47 +1,58 @@
-name: Android CI
+name: Build & Auto-Release Signed APK (Cloud)
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      # Checkout repo
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Flutter (latest stable)
-        uses: subosito/flutter-action@v1
+      # Setup Flutter
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'   # STABLE VERSION
-          channel: 'stable'
+          flutter-version: "3.19.6"
 
-      - name: Verify Flutter
+      # Decode keystore
+      - name: Decode Keystore
         run: |
-          flutter --version
-          echo "FLUTTER_ROOT = $FLUTTER_ROOT"
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/visora-release.jks
+          echo "Keystore decoded"
 
-      - name: Accept Android licenses
-        run: yes | flutter doctor --android-licenses
+      # Create key.properties
+      - name: Create key.properties
+        run: |
+          cat <<EOF > android/key.properties
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=visora-release.jks
+          EOF
+          echo "key.properties created"
 
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+      # Fix Android embedding + recreate android folder if needed
+      - name: Recreate Android folder (fix gradle issues)
+        run: flutter create . --platforms=android --project-name visora_ai_flutter || true
 
+      # Install dependencies
       - name: Flutter pub get
         run: flutter pub get
 
+      # Build release APK
       - name: Build Release APK
         run: flutter build apk --release --verbose
 
-      - name: Upload APK
+      # Upload APK artifact
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk
+          name: Visora-AI-APK
           path: build/app/outputs/flutter-apk/app-release.apk
