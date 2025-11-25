@@ -11,7 +11,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      # optional: ensure JAVA tool cache will be used
       JAVA_HOME: /usr/lib/jvm/java-17-temurin
 
     steps:
@@ -24,34 +23,33 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Flutter (latest stable)
+      - name: Setup Flutter (stable)
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: '3.22.0'
 
-      # -------------------------
-      # Regenerate Android files
-      # -------------------------
-      - name: Regenerate Flutter Android files
+      - name: Regenerate Flutter Android files (force)
         run: |
-          echo ">>> Regenerating Android folder (will replace broken android/ if present)"
-          # remove broken android folder if exists (safe in CI)
+          echo ">>> Removing any existing android/ to avoid corrupted files"
           rm -rf android
-          # ensure deps are available then create Android project files only
+          echo ">>> Ensuring dependencies available"
           flutter pub get
-          # create only android platform files in-place (project name + org set)
-          flutter create --platforms=android --org com.visora.ai --project-name visora_ai .
+          echo ">>> Recreating Android project files (overwrite mode)"
+          # --overwrite will ensure missing/broken gradle files get recreated
+          flutter create --platforms=android --org com.visora.ai --project-name visora_ai . --overwrite
           flutter pub get
         shell: bash
 
-      # create android/local.properties so Gradle finds SDK in CI
       - name: Create android/local.properties
         run: |
-          echo ">>> Creating android/local.properties"
-          FLUTTER_DIR=$(flutter --version --machine | sed -n '1p' 2>/dev/null || flutter --version | head -n1)
-          # try to detect FLUTTER_ROOT from the installed flutter action
-          FLUTTER_ROOT=$(dirname "$(dirname "$(which flutter)")")
+          echo ">>> Creating android/local.properties pointing to CI Flutter"
+          FLUTTER_BIN=$(which flutter || true)
+          if [ -z "$FLUTTER_BIN" ]; then
+            echo "flutter not found on PATH"
+            exit 1
+          fi
+          FLUTTER_ROOT=$(dirname "$(dirname "$FLUTTER_BIN")")
           echo "flutter.sdk=${FLUTTER_ROOT}" > android/local.properties
           cat android/local.properties
         shell: bash
