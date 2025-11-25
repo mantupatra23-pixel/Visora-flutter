@@ -1,3 +1,4 @@
+# .github/workflows/android-build.yml
 name: Android Build CI
 
 on:
@@ -21,13 +22,13 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Flutter
+      - name: Setup Flutter (newer stable with newer Dart)
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.16.0'
+          flutter-version: '3.22.0'   # <- upgraded Flutter (has newer Dart)
           channel: stable
 
-      - name: Flutter Pub Get
+      - name: Flutter pub get
         run: flutter pub get
 
       - name: Build APK
