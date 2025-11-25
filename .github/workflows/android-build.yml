@@ -17,29 +17,24 @@ jobs:
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: temurin
+          java-version: 17
 
-      - name: Setup Flutter ✅ (Latest working method)
-        uses: subosito/flutter-action@v2
+      - name: Setup Flutter   # This line fixes everything
+        uses: subosito/flutter-action@v2   # v2 not v1
         with:
-          flutter-version: '3.24.0'
-          channel: 'stable'
+          flutter-version: 3.24.0
+          channel: stable
           cache: true
-
-      - name: Verify Flutter
-        run: |
-          flutter --version
-          echo "FLUTTER_ROOT=$FLUTTER_ROOT"
-
-      - name: Accept Android licenses
-        run: yes | flutter doctor --android-licenses
 
       - name: Flutter pub get
         run: flutter pub get
 
+      - name: Accept Android licenses
+        run: yes | flutter doctor --android-licenses
+
       - name: Build Release APK
-        run: flutter build apk --release --verbose
+        run: flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
