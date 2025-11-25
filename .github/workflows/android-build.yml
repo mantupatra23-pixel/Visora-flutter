@@ -9,38 +9,47 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      # optionally set JAVA_HOME if you need a specific JDK version
-      JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
 
     steps:
+      # Checkout code
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Flutter (uses action that sets FLUTTER_ROOT)
-        uses: subosito/flutter-action@v2
+      # Install Flutter (most stable action)
+      - name: Setup Flutter
+        uses: flutter-actions/setup-flutter@v2
         with:
-          flutter-version: 'stable'   # or specify e.g. '3.14.0' if you need pinned version
           channel: stable
+          version: latest
 
+      # Just to confirm FLUTTER_ROOT is set (debug)
+      - name: Check Flutter
+        run: |
+          echo "Flutter: $(flutter --version)"
+          echo "FLUTTER_ROOT = $FLUTTER_ROOT"
+
+      # Accept all Android licenses
       - name: Accept Android licenses
-        run: yes | $FLUTTER_ROOT/bin/flutter doctor --android-licenses
-        # Note: action already sets FLUTTER_ROOT env var
+        run: yes | flutter doctor --android-licenses
 
-      - name: Configure Java (optional)
+      # Setup Java 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17' 
+          java-version: '17'
 
-      - name: Install Android SDK tools (optional helpful step)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget unzip
-        # (Most hosted runners already have the SDK; include only if needed)
-
+      # Install Flutter dependencies
       - name: Flutter pub get
-        run: $FLUTTER_ROOT/bin/flutter pub get
+        run: flutter pub get
 
-      - name: Build release APK
-        run: $FLUTTER_ROOT/bin/flutter build apk --release --verbose
+      # Build Release APK
+      - name: Build APK
+        run: flutter build apk --release --verbose
+
+      # Upload APK artifact
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
