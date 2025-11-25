@@ -1,13 +1,9 @@
-// android/settings.gradle (replace entire file with this)
-
 pluginManagement {
     repositories {
         google()
-        maven { url "https://maven.google.com" }
         mavenCentral()
         gradlePluginPortal()
-        // fallback to dl.google for some CI environments
-        maven { url "https://dl.google.com/dl/android/maven2/" }
+        maven { url "https://maven.google.com" }
     }
 }
 
@@ -15,17 +11,15 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google()
-        maven { url "https://maven.google.com" }
         mavenCentral()
-        // fallback
-        maven { url "https://dl.google.com/dl/android/maven2/" }
+        maven { url "https://maven.google.com" }
     }
 }
 
-// project name after pluginManagement and dependencyResolutionManagement
 rootProject.name = "visora_ai"
-include ':app'
+include(":app")
 
+// Flutter settings
 setBinding(new Binding([gradle: this]))
 File flutterSettings = new File(settingsDir, "flutter_settings.gradle")
 if (flutterSettings.exists()) {
