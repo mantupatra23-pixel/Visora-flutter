@@ -1,0 +1,6 @@
+def flutterRoot = System.getenv("FLUTTER_ROOT")
+if (flutterRoot == null) {
+    throw new GradleException("FLUTTER_ROOT environment variable not set. Flutter SDK required.")
+}
+
+apply from: "${flutterRoot}/packages/flutter_tools/gradle/flutter.gradle"
