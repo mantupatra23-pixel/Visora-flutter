@@ -1,12 +1,10 @@
-// android/build.gradle (TOP-LEVEL)
-
 buildscript {
     ext.kotlin_version = "1.9.25"
 
-    // FIX: Disable ErrorProne (CI build issue)
+    // Disable ErrorProne for CI
     configurations.all {
         exclude group: "com.google.errorprone", module: "error_prone_annotations"
-        exclude group: "com.google.errorprone", module: "error_prone_parent"
+        exclude group: "com.google.errorprone"
     }
 
     repositories {
@@ -15,12 +13,14 @@ buildscript {
         gradlePluginPortal()
         maven { url "https://maven.google.com" }
         maven { url "https://dl.google.com/dl/android/maven2" }
+        // IMPORTANT Flutter repo (missing earlier)
+        maven { url "https://storage.googleapis.com/download.flutter.io" }
     }
 
     dependencies {
         classpath "com.android.tools.build:gradle:8.1.2"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath "com.google.gms:google-services:4.4.2"
+        classpath "com.google.gms:google-services:4.4.0"
     }
 }
 
@@ -30,6 +30,8 @@ allprojects {
         mavenCentral()
         maven { url "https://maven.google.com" }
         maven { url "https://dl.google.com/dl/android/maven2" }
+        // IMPORTANT Flutter repo (fixes flutter_embedding error)
+        maven { url "https://storage.googleapis.com/download.flutter.io" }
         jcenter() // safe fallback
     }
 }
@@ -40,7 +42,7 @@ subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
     project.evaluationDependsOn(":app")
 
-    // Safe Kotlin Compiler
+    // Kotlin compiler
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         kotlinOptions {
             jvmTarget = "17"
