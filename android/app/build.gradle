@@ -1,7 +1,11 @@
-// android/app/build.gradle
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
 import java.util.Properties
 
-// Load local.properties to find Flutter SDK path (used by the Flutter Gradle script)
+// Load local.properties to find Flutter SDK path (used by CI)
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -10,16 +14,12 @@ if (localPropertiesFile.exists()) {
 
 def flutterRoot = localProperties.getProperty('flutter.sdk')
 if (flutterRoot == null) {
+    // Fallback to environment variable (CI)
     flutterRoot = System.getenv("FLUTTER_ROOT")
 }
 
-plugins {
-    id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
-}
-
 android {
-    namespace "com.visora.ai"              // change if your package is different
+    namespace "com.visora.ai"
     compileSdk 34
 
     defaultConfig {
@@ -28,20 +28,14 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
-
         multiDexEnabled true
     }
 
     signingConfigs {
         release {
-            // If your CI writes the keystore to file, keep the line below:
+            // keep these commented or configured for CI if you use keystore
             // storeFile file("visora-release.jks")
-
-            // If your CI decodes keystore to $HOME, use:
-            // storeFile file(System.getenv("HOME") + "/visora-release.jks")
-
-            // Read passwords and alias from environment variables (recommended in CI)
-            // storePassword System.getenv("ANDROID_KEY_PASSWORD")
+            // storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
             // keyAlias System.getenv("ANDROID_KEY_ALIAS")
             // keyPassword System.getenv("ANDROID_KEY_PASSWORD")
         }
@@ -49,15 +43,10 @@ android {
 
     buildTypes {
         release {
-            // Use release signing when you want to upload signed APK / AAB
-            // signingConfig signingConfigs.release
-
-            // For CI debugging, keep minify disabled initially
+            // signingConfig signingConfigs.release   // enable if you have keys
             minifyEnabled false
             shrinkResources false
-            // proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
-
         debug {
             minifyEnabled false
         }
@@ -69,35 +58,33 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = '17'
+        jvmTarget = "17"
     }
 
     packagingOptions {
         resources {
             excludes += [
-                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE",
                 "META-INF/NOTICE",
-                "META-INF/LICENSE"
+                "META-INF/LICENSE.txt",
+                "META-INF/NOTICE.txt"
             ]
         }
     }
 }
 
 flutter {
-    // this points the module back to the Flutter project root
-    source '../..'
+    source '../../.'
 }
 
 dependencies {
-    implementation "androidx.core:core-ktx:1.13.1"
-    implementation "androidx.multidex:multidex:2.0.1"
-
-    // Add any additional native libs your app needs here
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'androidx.multidex:multidex:2.0.1'
 }
 
-// Apply the Flutter Gradle script (this must run after android{} block so the Flutter build hooks are attached)
+// Ensure Flutter SDK path is available before applying Flutter gradle script
 if (flutterRoot == null) {
-    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in local.properties or set FLUTTER_ROOT environment variable.")
+    throw new GradleException("Flutter SDK not found. Set flutter.sdk in local.properties or FLUTTER_ROOT env variable.")
 }
 
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
