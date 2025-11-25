@@ -1,4 +1,4 @@
-// Top-level settings file for Gradle
+/* Top-level settings file for Gradle */
 
 pluginManagement {
     repositories {
@@ -21,7 +21,7 @@ dependencyResolutionManagement {
 rootProject.name = "visora_ai"
 include(":app")
 
-// Prefer reading flutter path from local.properties (works on GitHub Actions)
+// Prefer reading flutter sdk path from local.properties
 def localProperties = new Properties()
 def localPropertiesFile = new File(rootProject.projectDir, "local.properties")
 if (localPropertiesFile.exists()) {
@@ -32,13 +32,12 @@ if (localPropertiesFile.exists()) {
 
 def flutterSdkPath = localProperties.getProperty("flutter.sdk")
 if (flutterSdkPath == null) {
-    // If local.properties doesn't define flutter.sdk, fallback to an env var (optional)
+    // Fallback to environment variable (GitHub Actions)
     flutterSdkPath = System.getenv("FLUTTER_ROOT")
 }
 
 if (flutterSdkPath == null) {
-    // Don't throw here — fail later more gracefully; log a message instead
-    println "NOTE: flutter.sdk not found in local.properties and FLUTTER_ROOT not set. Build may fail if Flutter SDK is required."
+    println "NOTE: flutter.sdk not found in local.properties or FLUTTER_ROOT"
 } else {
     apply from: "$flutterSdkPath/packages/flutter_tools/gradle/app_plugin_loader.gradle"
 }
