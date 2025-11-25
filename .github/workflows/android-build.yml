@@ -10,11 +10,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      BUILD_MODE: release
-      APK_OUTPUT: app-release.apk
-      # Optional: change flutter version below if needed
-      FLUTTER_VERSION: '3.13.0'
 
     steps:
       - name: Checkout repo
@@ -26,84 +21,44 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Flutter (install chosen stable version)
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          flutter-version: '3.13.0'
           channel: stable
 
-      - name: Verify flutter & dart
-        run: |
-          flutter --version
-          dart --version
+      - name: Verify flutter
+        run: flutter --version
 
-      # --- Accept Android licenses step (still needs sdkmanager to be present)
-      - name: Accept Android licenses (best-effort)
-        env:
-          ANDROID_HOME: ${{ runner.temp }}/android-sdk
+      - name: Install Android SDK Commandline tools
         run: |
-          # create SDK dir (licenses acceptance may still need sdkmanager - we install it next)
-          mkdir -p "$ANDROID_HOME"
-          echo "Prepared ANDROID_HOME: $ANDROID_HOME"
-        shell: bash
-
-      - name: Install Android SDK commandline tools + components
-        env:
-          ANDROID_HOME: ${{ runner.temp }}/android-sdk
-          PATH: ${{ runner.temp }}/android-sdk/cmdline-tools/latest/bin:${{ runner.temp }}/android-sdk/platform-tools:$PATH
-        run: |
-          set -e
-          echo "ANDROID_HOME = $ANDROID_HOME"
           sudo apt-get update -y
           sudo apt-get install -y wget unzip
-          mkdir -p "$ANDROID_HOME/cmdline-tools"
-          cd "$ANDROID_HOME/cmdline-tools"
-          echo "Downloading Android commandline tools..."
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdtools.zip
-          unzip -q cmdtools.zip -d latest_tmp
-          # move to canonical folder name "latest"
-          rm -rf latest || true
-          mv latest_tmp latest
-          rm cmdtools.zip
-          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
-          # accept licenses and install basic components
-          yes | sdkmanager --licenses || true
+          mkdir -p $HOME/android-sdk
+          cd $HOME/android-sdk
+          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O tools.zip
+          unzip tools.zip -d cmdline-tools-temp
+          mkdir -p cmdline-tools/latest
+          mv cmdline-tools-temp/* cmdline-tools/latest/
+          rm tools.zip
+        shell: bash
+
+      - name: Install Android SDK components
+        run: |
+          export ANDROID_HOME=$HOME/android-sdk
+          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
+          yes | sdkmanager --licenses
           sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
         shell: bash
-
-      - name: Add Android tools to PATH (for later steps)
-        env:
-          ANDROID_HOME: ${{ runner.temp }}/android-sdk
-        run: |
-          echo "ANDROID_SDK_ROOT=${ANDROID_HOME}" >> $GITHUB_ENV
-          echo "${ANDROID_HOME}/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "${ANDROID_HOME}/platform-tools" >> $GITHUB_PATH
-        shell: bash
-
-      - name: Cache pub dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pub-cache
-            **/.dart_tool
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
 
       - name: Flutter pub get
         run: flutter pub get
 
-      - name: Build release APK
-        run: |
-          flutter build apk --release --no-shrink
-        shell: bash
+      - name: Build APK
+        run: flutter build apk --release --no-shrink
 
-      - name: Upload APK artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk
+          name: visora-ai-apk
           path: build/app/outputs/flutter-apk/*.apk
-
-      - name: Post cleanup (optional)
-        if: always()
-        run: echo "done"
