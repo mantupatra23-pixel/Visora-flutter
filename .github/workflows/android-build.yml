@@ -1,58 +1,198 @@
-name: Android Build CI
+name: Android Build CI (auto-detect)
 
 on:
   push:
+    branches: [ main ]
+  pull_request:
     branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # अगर तू regenerate करना चाहता है (overwrite) तो इसे true कर दे
+      REGENERATE_ANDROID: "false"
+      # Kotlin version to force
+      FORCE_KOTLIN_VERSION: "1.9.22"
+      # Gradle wrapper distribution we prefer
+      FORCE_GRADLE_DISTRIBUTION: "https://services.gradle.org/distributions/gradle-8.5-all.zip"
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
 
-      - name: Setup Java 17
+      - name: Setup Java 17 (Temurin)
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Flutter
+      - name: Setup Flutter (stable)
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          channel: 'stable'
           flutter-version: '3.22.0'
 
-      # 💥 Full FIX — recreate android folder
-      - name: Recreate Android folder (fresh)
-        run: |
-          echo ">>> Deleting old android folder (broken gradle)"
-          rm -rf android
-          echo ">>> Creating new clean android project"
-          flutter create --platforms=android --org com.visora.ai --project-name visora_ai .
-          flutter pub get
+      - name: Cache pub packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-cache-${{ hashFiles('**/pubspec.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-cache-
 
-      # Create local.properties
-      - name: Create android/local.properties
+      - name: Find android modules
+        id: find_android
         run: |
-          FLUTTER_BIN=$(which flutter)
-          FLUTTER_ROOT=$(dirname "$(dirname "$FLUTTER_BIN")")
-          echo "flutter.sdk=${FLUTTER_ROOT}" > android/local.properties
-          cat android/local.properties
+          # find all android folders up to depth 4 (ignore build, .gradle)
+          echo "Searching for android directories..."
+          mapfile -t mods < <(find . -maxdepth 4 -type d -name android -not -path "./build/*" -not -path "*/.gradle/*" -print)
+          if [ ${#mods[@]} -eq 0 ]; then
+            echo "no_android=true" >> $GITHUB_OUTPUT
+            echo "paths=" >> $GITHUB_OUTPUT
+          else
+            echo "no_android=false" >> $GITHUB_OUTPUT
+            # convert array to newline-separated absolute parents
+            paths=$(printf "%s\n" "${mods[@]}" | sed 's|/android$||' | sort -u)
+            echo "paths<<EOF" >> $GITHUB_OUTPUT
+            echo "$paths" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Flutter Doctor
+      - name: Debug found modules
+        if: steps.find_android.outputs.no_android == 'false'
+        run: |
+          echo "Found module parents:"
+          echo "${{ steps.find_android.outputs.paths }}"
+
+      - name: (Optional) Regenerate Android (remove+create) if requested
+        if: env.REGENERATE_ANDROID == 'true' && steps.find_android.outputs.no_android == 'false'
+        run: |
+          echo "REGENERATE_ANDROID=true -> removing android/ and recreating per module"
+          IFS=$'\n'
+          for parent in ${{ steps.find_android.outputs.paths }}; do
+            echo "Processing $parent"
+            rm -rf "$parent/android"
+            pushd "$parent"
+            flutter pub get
+            flutter create --platforms=android --org com.yourcompany --project-name "$(basename $parent)" .
+            flutter pub get
+            popd
+          done
+
+      - name: Attempt to update Kotlin + Gradle wrapper in each module (best-effort)
+        if: steps.find_android.outputs.no_android == 'false'
+        run: |
+          IFS=$'\n'
+          for parent in ${{ steps.find_android.outputs.paths }}; do
+            echo "=== Updating kotlin/gradle for module: $parent ==="
+            bd="$parent/android"
+            build_gradle="$bd/build.gradle"
+            wrapper_props="$bd/gradle/wrapper/gradle-wrapper.properties"
+
+            if [ -f "$build_gradle" ]; then
+              echo "Updating ext.kotlin_version in $build_gradle (best-effort)"
+              # replace ext.kotlin_version line or append it under buildscript
+              if grep -q "ext.kotlin_version" "$build_gradle"; then
+                sed -i "s/ext.kotlin_version *= *.*/ext.kotlin_version = '${FORCE_KOTLIN_VERSION}'/g" "$build_gradle" || true
+              else
+                # try to insert after buildscript { ... repositories { ... } dependencies { ... } }
+                awk -v kv="ext.kotlin_version = '${FORCE_KOTLIN_VERSION}'" '
+                  BEGIN{p=0}
+                  /buildscript[[:space:]]*{/ {print; p=1; next}
+                  { if(p==1 && /dependencies[[:space:]]*{/){ print kv; p=0 } ; print}
+                ' "$build_gradle" > "$build_gradle.tmp" && mv "$build_gradle.tmp" "$build_gradle" || true
+              fi
+            fi
+
+            if [ -f "$wrapper_props" ]; then
+              echo "Updating gradle wrapper distribution to use $FORCE_GRADLE_DISTRIBUTION"
+              sed -i "s|distributionUrl=.*|distributionUrl=${FORCE_GRADLE_DISTRIBUTION}|g" "$wrapper_props" || true
+            fi
+          done
+
+      - name: Create android/local.properties for each module (set FLUTTER SDK path)
+        if: steps.find_android.outputs.no_android == 'false'
+        run: |
+          FLUTTER_BIN=$(which flutter || true)
+          if [ -z "$FLUTTER_BIN" ]; then
+            echo "flutter not found on PATH - aborting"
+            exit 1
+          fi
+          FLUTTER_ROOT="$(dirname "$(dirname "$FLUTTER_BIN")")"
+          echo "Detected FLUTTER_ROOT=$FLUTTER_ROOT"
+          IFS=$'\n'
+          for parent in ${{ steps.find_android.outputs.paths }}; do
+            mkdir -p "$parent/android"
+            echo "Writing local.properties for $parent"
+            echo "flutter.sdk=${FLUTTER_ROOT}" > "$parent/android/local.properties"
+            # ensure gradle.properties exists (avoid build errors)
+            touch "$parent/android/gradle.properties"
+          done
+
+      - name: Run Flutter doctor (quick)
         run: flutter doctor -v
 
-      - name: Pub Get
-        run: flutter pub get
+      - name: Build all found Android apps
+        if: steps.find_android.outputs.no_android == 'false'
+        run: |
+          set -euo pipefail
+          IFS=$'\n'
+          count=0
+          for parent in ${{ steps.find_android.outputs.paths }}; do
+            echo "-----------------------------"
+            echo "Building module at: $parent"
+            pushd "$parent"
+            echo "Running: flutter pub get"
+            flutter pub get --offline || flutter pub get || true
+            # make sure multiDex enabled for many libs
+            # try to bump compile/target SDK if build.gradle exposes them (best-effort)
+            appGradle="android/app/build.gradle"
+            if [ -f "$appGradle" ]; then
+              sed -i "s/compileSdkVersion [0-9]\+/compileSdkVersion 34/g" "$appGradle" || true
+              sed -i "s/targetSdkVersion [0-9]\+/targetSdkVersion 34/g" "$appGradle" || true
+            fi
 
-      - name: Build APK
-        run: flutter build apk --release --no-shrink
+            echo "Running flutter build apk --release --no-shrink"
+            # try two times (sometimes first time resolves deps)
+            if flutter build apk --release --no-shrink; then
+              echo "Build succeeded for $parent"
+            else
+              echo "Build failed once, retrying flutter pub get and build..."
+              flutter pub get
+              flutter build apk --release --no-shrink
+            fi
 
-      - name: Upload APK
+            # copy produced apk into root build-artifacts/<module>
+            mkdir -p $GITHUB_WORKSPACE/build-artifacts/$(basename "$parent")
+            out=$(ls build/app/outputs/flutter-apk/*.apk 2>/dev/null || true)
+            if [ -n "$out" ]; then
+              cp build/app/outputs/flutter-apk/*.apk $GITHUB_WORKSPACE/build-artifacts/$(basename "$parent")/
+            else
+              # older gradle path
+              out2=$(ls build/app/outputs/apk/release/*.apk 2>/dev/null || true)
+              if [ -n "$out2" ]; then
+                cp build/app/outputs/apk/release/*.apk $GITHUB_WORKSPACE/build-artifacts/$(basename "$parent")/
+              fi
+            fi
+
+            popd
+            count=$((count+1))
+          done
+          echo "Built $count modules."
+
+      - name: No android modules found - fail info
+        if: steps.find_android.outputs.no_android == 'true'
+        run: |
+          echo "No android folder found in repo within depth 4. If your Flutter project is at a subfolder, adjust the workflow."
+          exit 1
+
+      - name: Upload APK artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: visora-ai-apk
-          path: build/app/outputs/flutter-apk/*.apk
+          name: android-apks
+          path: build-artifacts/**/*.apk
