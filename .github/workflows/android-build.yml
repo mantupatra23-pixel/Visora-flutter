@@ -1,4 +1,4 @@
-name: Android CI - Build Release APK
+name: Android CI - Build APK
 
 on:
   push:
@@ -27,29 +27,32 @@ jobs:
           flutter-version: '3.13.0'
           channel: stable
 
-      - name: Install Android Commandline Tools
+      - name: Install Android CMD Tools
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y unzip wget
-
           mkdir -p $HOME/android-sdk/cmdline-tools
           cd $HOME/android-sdk/cmdline-tools
-
-          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O tools.zip
+          
+          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
+          
+          mkdir latest
           unzip tools.zip -d latest
-
+          mv latest/cmdline-tools/* latest/
+          rm -rf latest/cmdline-tools
+          
           rm tools.zip
         shell: bash
 
       - name: Install Android SDK components
         run: |
           export ANDROID_HOME=$HOME/android-sdk
-          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
-
+          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
+          
+          sdkmanager --version
           yes | sdkmanager --licenses
+          
           sdkmanager "platform-tools"
-          sdkmanager "platforms;android-33"
-          sdkmanager "build-tools;33.0.2"
+          sdkmanager "platforms;android-34"
+          sdkmanager "build-tools;34.0.0"
         shell: bash
 
       - name: Flutter pub get
