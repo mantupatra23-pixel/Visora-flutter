@@ -14,32 +14,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Flutter (Official Action)
-        uses: flutter-actions/setup-flutter@v2
-        with:
-          channel: 'stable'
-          version: '3.24.0'   # stable version FIXED
-
-      - name: Flutter Version Check
-        run: flutter --version
-
-      - name: Accept Android Licenses
-        run: yes | flutter doctor --android-licenses
-
-      - name: Setup Java 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: temurin
+          java-version: 17
 
-      - name: Install Dependencies
+      # YEHI LINE SABSE ZAROORI HAI — ISKO EXACTLY VAISA HI LIKHO
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.24.0
+          channel: stable
+          cache: true
+
+      - name: Get dependencies
         run: flutter pub get
 
-      - name: Build Release APK
+      - name: Accept Android licenses
+        run: yes | flutter doctor --android-licenses
+
+      - name: Build APK
         run: flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: app-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
