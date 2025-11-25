@@ -1,3 +1,8 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
 import java.util.Properties
 
 // Load local.properties to find Flutter SDK path (used by CI)
@@ -11,16 +16,9 @@ if (localPropertiesFile.exists()) {
 
 def flutterRoot = localProperties.getProperty('flutter.sdk')
 if (flutterRoot == null) {
-    // Fallback to environment variable (GitHub Actions sets FLUTTER_ROOT when using flutter-action)
     flutterRoot = System.getenv("FLUTTER_ROOT")
 }
 
-plugins {
-    id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
-}
-
-// --- ANDROID CONFIG ---
 android {
     namespace "com.visora.ai"
     compileSdk 34
@@ -31,34 +29,19 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
-
         multiDexEnabled true
     }
 
     signingConfigs {
         release {
-            // If your CI writes the keystore to file, keep the line below:
             // storeFile file("visora-release.jks")
-
-            // If your CI decodes keystore to $HOME, uncomment:
-            // storeFile file(System.getenv("HOME"))
-
-            // Read passwords and alias from environment:
-            // storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
-            // keyAlias System.getenv("ANDROID_KEY_ALIAS")
-            // keyPassword System.getenv("ANDROID_KEY_PASSWORD")
         }
     }
 
     buildTypes {
         release {
-            // Use release signing when you want to
-            // signingConfig signingConfigs.release
-
-            // For CI debugging keep minify disabled
             minifyEnabled false
             shrinkResources false
-            // proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
         debug {
             minifyEnabled false
@@ -85,23 +68,18 @@ android {
     }
 }
 
-// ----- IMPORTANT: put flutter { ... } OUTSIDE android {} and BEFORE dependencies {} -----
-// This must be above dependencies block so Gradle recognizes flutter() configuration.
+// flutter block MUST be here
 flutter {
-    // points module back to Flutter project root (adjust if your relative path differs)
     source '../../.'
 }
 
 dependencies {
     implementation "androidx.core:core-ktx:1.13.1"
     implementation "androidx.multidex:multidex:2.0.1"
-
-    // Add any additional native libs your app needs here
 }
 
-// Apply the Flutter Gradle script (this must run after flutterRoot is set)
 if (flutterRoot == null) {
-    throw new GradleException("Flutter SDK not found. Set flutter.sdk in local.properties or FLUTTER_ROOT environment variable.")
+    throw new GradleException("Flutter SDK not found. Set flutter.sdk in local.properties or FLUTTER_ROOT.")
 }
 
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
