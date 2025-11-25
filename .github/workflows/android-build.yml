@@ -1,35 +1,46 @@
-name: Build Release APK
+name: Android CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # optionally set JAVA_HOME if you need a specific JDK version
+      JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: "temurin"
-          java-version: "17"
-
-      - name: Setup Flutter
+      - name: Install Flutter (uses action that sets FLUTTER_ROOT)
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.24.0"
+          flutter-version: 'stable'   # or specify e.g. '3.14.0' if you need pinned version
+          channel: stable
 
-      - name: Flutter Pub Get
-        run: flutter pub get
+      - name: Accept Android licenses
+        run: yes | $FLUTTER_ROOT/bin/flutter doctor --android-licenses
+        # Note: action already sets FLUTTER_ROOT env var
 
-      - name: Build Release APK
-        run: flutter build apk --release
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - name: Configure Java (optional)
+        uses: actions/setup-java@v4
         with:
-          name: visora-ai-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          distribution: 'temurin'
+          java-version: '17' 
+
+      - name: Install Android SDK tools (optional helpful step)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget unzip
+        # (Most hosted runners already have the SDK; include only if needed)
+
+      - name: Flutter pub get
+        run: $FLUTTER_ROOT/bin/flutter pub get
+
+      - name: Build release APK
+        run: $FLUTTER_ROOT/bin/flutter build apk --release --verbose
