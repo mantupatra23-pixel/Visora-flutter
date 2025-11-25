@@ -10,6 +10,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # optional: ensure JAVA tool cache will be used
+      JAVA_HOME: /usr/lib/jvm/java-17-temurin
 
     steps:
       - name: Checkout repository
@@ -19,28 +22,39 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
 
       - name: Setup Flutter (latest stable)
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: "3.22.0"
+          flutter-version: '3.22.0'
 
-      # 🔥 Fix FLUTTER_ROOT + regenerate android folder 
+      # -------------------------
+      # Regenerate Android files
+      # -------------------------
       - name: Regenerate Flutter Android files
         run: |
+          echo ">>> Regenerating Android folder (will replace broken android/ if present)"
+          # remove broken android folder if exists (safe in CI)
+          rm -rf android
+          # ensure deps are available then create Android project files only
           flutter pub get
+          # create only android platform files in-place (project name + org set)
           flutter create --platforms=android --org com.visora.ai --project-name visora_ai .
           flutter pub get
         shell: bash
 
+      # create android/local.properties so Gradle finds SDK in CI
       - name: Create android/local.properties
         run: |
           echo ">>> Creating android/local.properties"
-          FLUTTER_DIR=$(flutter --version | grep '•' | awk '{print $4}')
-          echo "flutter.sdk=$FLUTTER_DIR" > android/local.properties
+          FLUTTER_DIR=$(flutter --version --machine | sed -n '1p' 2>/dev/null || flutter --version | head -n1)
+          # try to detect FLUTTER_ROOT from the installed flutter action
+          FLUTTER_ROOT=$(dirname "$(dirname "$(which flutter)")")
+          echo "flutter.sdk=${FLUTTER_ROOT}" > android/local.properties
           cat android/local.properties
+        shell: bash
 
       - name: Flutter doctor
         run: flutter doctor -v
