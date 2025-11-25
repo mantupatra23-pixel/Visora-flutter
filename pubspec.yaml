@@ -66,7 +66,7 @@ dependencies:
   cached_network_image: ^3.3.1
 
   # Share Plus (note: comment said fixed for Dart 3.3.4 in original file)
-  share_plus: ^9.0.0
+    share_plus: ^8.0.2
 
 dev_dependencies:
   flutter_test:
