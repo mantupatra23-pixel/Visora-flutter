@@ -1,45 +1,90 @@
-name: Android CI
+name: Build & Auto-Release Signed APK (Cloud)
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      # Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Flutter (official)
-        uses: flutter-actions/setup-flutter@v2
-        with:
-          channel: stable
-          version: '3.10.6'   # ya koi stable version jo chahiye — use fixed version
-
-      - name: Flutter --version
-        run: flutter --version
-
-      - name: Accept Android licenses
-        run: yes | flutter doctor --android-licenses
-
-      - name: Setup Java 17
+      # Setup Java JDK 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install dependencies
+      # Cache Gradle & Maven dependencies
+      - name: Cache Gradle & Maven
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.m2/repository
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      # Setup Flutter
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.6'
+
+      # Decode Android Keystore
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/visora-release.jks
+          echo "✔ Keystore decoded"
+
+      # Install dependencies
+      - name: Flutter Pub Get
         run: flutter pub get
 
-      - name: Build release APK
-        run: flutter build apk --release
+      # Create google-services.json dynamically
+      - name: Generate google-services.json
+        run: |
+          echo "{
+            \"project_info\": {
+              \"project_number\": \"${{ secrets.FIREBASE_PROJECT_NUMBER }}\",
+              \"project_id\": \"${{ secrets.FIREBASE_PROJECT_ID }}\",
+              \"storage_bucket\": \"${{ secrets.FIREBASE_STORAGE_BUCKET }}\"
+            },
+            \"client\": [
+              {
+                \"client_info\": {
+                  \"mobilesdk_app_id\": \"${{ secrets.FIREBASE_APP_ID }}\",
+                  \"android_client_info\": {
+                    \"package_name\": \"com.example.visora_ai_flutter\"
+                  }
+                },
+                \"api_key\": [
+                  {
+                    \"current_key\": \"${{ secrets.FIREBASE_API_KEY }}\"
+                  }
+                ]
+              }
+            ],
+            \"configuration_version\": \"1\"
+          }" > android/app/google-services.json
+          echo "✔ google-services.json created"
 
-      - name: Upload APK artifact
+      # Build APK
+      - name: Build Release APK
+        run: flutter build apk --release --verbose
+
+      # Upload generated APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: VisoraAI-APK
           path: build/app/outputs/flutter-apk/app-release.apk
